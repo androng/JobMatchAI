@@ -54,7 +54,7 @@ async function evaluateJobMatch(jobData, candidateSummary) {
     };
 
     // Check if either parameter is empty
-    if (!candidateSummary) {
+    if (!candidateSummary || candidateSummary.includes("[your resume]")) {
         const ERROR_MESSAGE = "Candidate summary is empty";
         log("ERROR", ERROR_MESSAGE);
         throw new Error(ERROR_MESSAGE);

@@ -26,6 +26,18 @@ JobMatchAI is a Node.js application that automates job matching and evaluation p
    ```bash
    npm install
    ```
+1. Make a new Google Spreadsheet and add the following columns:
+   - Title
+   - Company
+   - Location
+   - Date Posted
+   - Job Link
+   - Contract Type
+   - Poster Profile URL
+   - GPT Job Match Percentage
+   - GPT Job Summary
+   - DeepSeek Job Match Percentage
+   - DeepSeek Job Summary
 
 3. Set up environment variables:
    Create a `.env` file in the root directory and add the following:
@@ -42,7 +54,10 @@ JobMatchAI is a Node.js application that automates job matching and evaluation p
 
 4. Modify the Apify LinkedIn Job Scraper API Input from https://console.apify.com/actors/BHzefUZlZRKWxkTck/input and update "apify_input.json"
 
-1. Add your resume to the "candidate_summary.txt" file.
+1. Add your resume to a "candidate_summary.txt" file in the root directory.
+
+1. Go to Google Cloud Console and create a service account and download the google_service_account_credentials.json file.
+
 ## Usage
 
 Start the application:
