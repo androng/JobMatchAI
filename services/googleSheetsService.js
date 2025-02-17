@@ -14,6 +14,10 @@ async function readJobsFromSheet() {
     const client = await auth.getClient();
     const range = "Sheet1!A1:H";
 
+    if(SPREADSHEET_ID == null || SPREADSHEET_ID == ""){
+        log('ERROR', 'spreadsheet ID is empty');
+        throw new Error();
+    }
     try {
         const response = await sheets.spreadsheets.values.get({
             spreadsheetId: SPREADSHEET_ID,

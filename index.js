@@ -2,7 +2,7 @@ require('dotenv').config();
 const { scrapeJobs } = require('./services/apifyService');
 const { saveJobsToFile, readJobsFromFile } = require('./services/fileService');
 const { readJobsFromSheet, writeJobToSheet } = require('./services/googleSheetsService');
-const { filterUniqueJobs } = require('./services/jobUtils');
+const { filterDuplicateJobs } = require('./services/jobUtils');
 const { log } = require('./services/loggingService');
 const { evaluateJobMatch } = require('./services/jobMatchEvaluator');
 const candidateSummary = require('fs').readFileSync('./candidate_summary.txt', 'utf8');
@@ -14,7 +14,7 @@ async function main() {
     try {
         let jobs;
         if (useDebugMode) {
-            jobs = readJobsFromFile("2025-01-27-jobs.json")
+            jobs = readJobsFromFile("apify_outputs/vQO5g45mnm8jwognj_1_output_2025-02-16T22:40:44.580Z.json")
         } else {
             // Step 1: Scrape jobs
             jobs = await scrapeJobs();
@@ -30,7 +30,7 @@ async function main() {
         // Step 3: Filter out duplicates
         const sheetData = await readJobsFromSheet();
         const existingJobs = sheetData.slice(1);
-        const uniqueJobs = filterUniqueJobs(existingJobs, jobs);
+        const uniqueJobs = filterDuplicateJobs(existingJobs, jobs);
 
         // Step 4: Write unique jobs to Google Sheets one by one
         let writtenCount = 0;
@@ -42,7 +42,7 @@ async function main() {
         log("INFO", `${writtenCount} unique jobs successfully written to Google Sheets.`);
 
     } catch (error) {
-        log('ERROR', 'Workflow failed.', { error: error.message });
+        log('ERROR', 'Workflow failed.', { error: error.stack });
     }
 }
 

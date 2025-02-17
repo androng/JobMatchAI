@@ -42,6 +42,7 @@ JobMatchAI is a Node.js application that automates job matching and evaluation p
 
 4. Modify the Apify LinkedIn Job Scraper API Input from https://console.apify.com/actors/BHzefUZlZRKWxkTck/input and update "apify_input.json"
 
+1. Add your resume to the "candidate_summary.txt" file.
 ## Usage
 
 Start the application:

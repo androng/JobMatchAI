@@ -1,11 +1,11 @@
 const { log } = require('./loggingService');
 
-function filterUniqueJobs(existingJobs, newJobs) {
-    log('INFO', 'Filtering unique jobs by Job Link...');
+function filterDuplicateJobs(existingJobs, newJobs) {
+    log('INFO', 'Using Job Link to filter duplicate jobs...');
     const existingLinks = new Set(existingJobs.map(row => row[4] || "")); // Column E: Job Link
-    const uniqueJobs = newJobs.filter(job => !existingLinks.has(job.url));
-    log('INFO', `Filtered ${uniqueJobs.length} unique jobs.`);
+    const uniqueJobs = newJobs.filter(job => !existingLinks.has(job.jobUrl));
+    log('INFO', `${uniqueJobs.length} jobs are unique.`);
     return uniqueJobs;
 }
 
-module.exports = { filterUniqueJobs };
+module.exports = { filterDuplicateJobs };

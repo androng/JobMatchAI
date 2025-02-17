@@ -31,10 +31,11 @@ function generateJobMatchPrompt(jobData, candidateSummary) {
 
     [ROLE] Job Match Evaluator
     [TASK] Assess the compatibility between the job requirements and the candidate's profile. Provide a match percentage based on the following criteria:
-    - Skills Alignment: 70%
-    - Experience Relevance: 20%
-    - Location/Remote Compatibility: 10%
-
+        - 90% matching skills and experience 
+        - 10% location. Preferred: San Francisco, Los Angeles, San Diego, New York. Second choice is US west coast. 
+        - mark 0 for all internships unless it says something like "school enrollment not required"
+        - mark 0 for all supervisor/director positions because candidate cannot manage people  
+        - mark 0 for any job that requires another language other than English
     [RULES]
     - Analyze the following:
       - JOB SUMMARY: ${JSON.stringify(jobData)}
@@ -51,6 +52,17 @@ async function evaluateJobMatch(jobData, candidateSummary) {
         deepSeekJobSummary: "",
         deepSeekJobMatchPercentage: "",
     };
+
+    // Check if either parameter is empty
+    if (!candidateSummary) {
+        const ERROR_MESSAGE = "Candidate summary is empty";
+        log("ERROR", ERROR_MESSAGE);
+        throw new Error(ERROR_MESSAGE);
+    }
+    if (!jobData) {
+        log("ERROR", "Job data is empty");
+        return results;
+    }
 
     // Check environment variables for GPT and DeepSeek usage
     const useGPT = process.env.USE_GPT === "true";
@@ -72,7 +84,7 @@ async function evaluateJobMatch(jobData, candidateSummary) {
 
             // Generate job match percentage with GPT
             const gptMatchResponse = await openaiClient.chat.completions.create({
-                model: "gpt-3.5-turbo",
+                model: "o1-mini",
                 messages: [
                     {
                         role: "user",
@@ -80,6 +92,7 @@ async function evaluateJobMatch(jobData, candidateSummary) {
                     },
                 ],
             });
+            // log("DEBUG", "GPT Match Inputs:", { jobData, candidateSummary });
             results.gptJobMatchPercentage = gptMatchResponse.choices[0]?.message?.content.trim() || "";
             log("INFO", "GPT Processed Job Match + Job Summary", { gptJobSummary: results.gptJobSummary, gptJobMatchPercentage: results.gptJobMatchPercentage });
 
@@ -119,7 +132,7 @@ async function evaluateJobMatch(jobData, candidateSummary) {
             log("ERROR", "Error processing DeepSeek job match:", error.message);
         }
     }
-
+``
     return results;
 }
 
