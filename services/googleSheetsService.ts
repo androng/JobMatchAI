@@ -39,20 +39,18 @@ async function writeJobToSheet(job: Job, jobAiResponses: JobAiResponses) {
     const client = await auth.getClient();
     const range = "Sheet1!A2";
 
-    const { gptJobSummary, gptJobMatchPercentage, deepSeekJobSummary, deepSeekJobMatchPercentage } = jobAiResponses
     const values = [
         [
             job.title || "",
             job.companyName || "",
             job.location || "",
-            job.publishedAt || "",
             job.jobUrl || "",
+            job.pay || "",
             job.contractType || "",
-            job.posterProfileUrl || "",
-            gptJobMatchPercentage,
-            gptJobSummary,
-            deepSeekJobMatchPercentage,
-            deepSeekJobSummary
+            job.source || "",
+            jobAiResponses.gptJobMatchPercentage || "",
+            jobAiResponses.gptJobSummary || "",
+            jobAiResponses.date_generated || ""
         ],
     ];
 

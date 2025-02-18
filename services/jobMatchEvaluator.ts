@@ -33,10 +33,7 @@ function generateJobMatchPrompt(jobData: Job, candidateSummary: string) {
     [ROLE] Job Match Evaluator
     [TASK] Assess the compatibility between the job requirements and the candidate's profile. Provide a match percentage based on the following criteria:
         - 90% matching skills and experience 
-        - 10% location. Preferred: San Francisco, Los Angeles, San Diego, New York. Second choice is US west coast. 
-        - mark 0 for all internships unless it says something like "school enrollment not required"
-        - mark 0 for all supervisor/director positions because candidate cannot manage people  
-        - mark 0 for any job that requires another language other than English
+        - 10% location. 
     [RULES]
     - Analyze the following:
       - JOB SUMMARY: ${JSON.stringify(jobData)}
@@ -47,11 +44,12 @@ function generateJobMatchPrompt(jobData: Job, candidateSummary: string) {
 }
 
 async function evaluateJobMatch(jobData: Job, candidateSummary: string): Promise<JobAiResponses> {
-    const results = {
+    const results: JobAiResponses = {
         gptJobSummary: "",
         gptJobMatchPercentage: "",
         deepSeekJobSummary: "",
         deepSeekJobMatchPercentage: "",
+        date_generated: new Date(),
     };
 
     // Check if either parameter is empty
