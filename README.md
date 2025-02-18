@@ -60,10 +60,16 @@ JobMatchAI is a Node.js application that automates job matching and evaluation p
 
 ## Usage
 
-Start the application:
+Compile the Typescript:
+
+```
+npx tsc --watch
+```
+
+In another terminal, start the application:
 
 ```bash
-node index.js
+node dist/index.js
 ```
 
 ## Dependencies
@@ -72,6 +78,7 @@ node index.js
 - [dotenv](https://www.npmjs.com/package/dotenv)
 - [googleapis](https://www.npmjs.com/package/googleapis)
 - [openai](https://www.npmjs.com/package/openai)
+- [typescript](https://www.npmjs.com/package/typescript)
 
 ## Contributing
 

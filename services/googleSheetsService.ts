@@ -2,6 +2,7 @@ const { google } = require('googleapis');
 const sheets = google.sheets('v4');
 const credentials = JSON.parse(require('fs').readFileSync('google_service_account_credentials.json'));
 const { log } = require('./loggingService');
+import { Job, JobAiResponses } from '../types';
 
 const auth = new google.auth.GoogleAuth({
     credentials,
@@ -28,12 +29,12 @@ async function readJobsFromSheet() {
         log('INFO', `Successfully read ${rows.length} rows from Google Sheets.`);
         return rows;
     } catch (error) {
-        log('ERROR', 'Error reading jobs from Google Sheets.', { error: error.message });
+        log('ERROR', 'Error reading jobs from Google Sheets.', { error: (error as Error).message });
         throw error;
     }
 }
 
-async function writeJobToSheet(job, jobAiResponses) {
+async function writeJobToSheet(job: Job, jobAiResponses: JobAiResponses) {
     log('INFO', 'Writing a job to Google Sheets...');
     const client = await auth.getClient();
     const range = "Sheet1!A2";
@@ -65,7 +66,7 @@ async function writeJobToSheet(job, jobAiResponses) {
         });
         log('INFO', 'Job successfully written to Google Sheets.');
     } catch (error) {
-        log('ERROR', 'Error writing job to Google Sheets.', { error: error.message });
+        log('ERROR', 'Error writing job to Google Sheets.', { error: (error as Error).message });
         throw error;
     }
 }

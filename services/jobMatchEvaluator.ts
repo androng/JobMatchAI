@@ -1,5 +1,6 @@
 const OpenAI = require("openai");
 const { log } = require('./loggingService');
+import { Job, JobAiResponses } from '../types';
 
 const deepseekClient = new OpenAI({
     baseURL: "https://api.deepseek.com",
@@ -11,7 +12,7 @@ const openaiClient = new OpenAI({
 });
 
 // Helper to generate job summary prompt
-function generateJobSummaryPrompt(jobData) {
+function generateJobSummaryPrompt(jobData: Job) {
     return `Job Summary Generation Prompt:
 
     [ROLE] Job Summary Generator
@@ -26,7 +27,7 @@ function generateJobSummaryPrompt(jobData) {
 }
 
 // Helper to generate job match prompt
-function generateJobMatchPrompt(jobData, candidateSummary) {
+function generateJobMatchPrompt(jobData: Job, candidateSummary: string) {
     return `Job Match Percentage Calculation Prompt:
 
     [ROLE] Job Match Evaluator
@@ -45,7 +46,7 @@ function generateJobMatchPrompt(jobData, candidateSummary) {
     MATCH PERCENTAGE:`;
 }
 
-async function evaluateJobMatch(jobData, candidateSummary) {
+async function evaluateJobMatch(jobData: Job, candidateSummary: string): Promise<JobAiResponses> {
     const results = {
         gptJobSummary: "",
         gptJobMatchPercentage: "",
@@ -97,7 +98,7 @@ async function evaluateJobMatch(jobData, candidateSummary) {
             log("INFO", "GPT Processed Job Match + Job Summary", { gptJobSummary: results.gptJobSummary, gptJobMatchPercentage: results.gptJobMatchPercentage });
 
         } catch (error) {
-            log("ERROR", "Error processing GPT job match:", error.message);
+            log("ERROR", "Error processing GPT job match:", (error as Error).message);
         }
     }
 
@@ -129,7 +130,7 @@ async function evaluateJobMatch(jobData, candidateSummary) {
             log("INFO", "DeepSeek Processed Job Match + Job Summary", { deepSeekJobMatchPercentage: results.deepSeekJobMatchPercentage, deepSeekJobSummary: results.deepSeekJobSummary });
 
         } catch (error) {
-            log("ERROR", "Error processing DeepSeek job match:", error.message);
+            log("ERROR", "Error processing DeepSeek job match:", (error as Error).message);
         }
     }
 ``

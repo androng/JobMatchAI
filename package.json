@@ -13,6 +13,7 @@
     "apify-client": "^2.11.1",
     "dotenv": "^16.4.7",
     "googleapis": "^144.0.0",
-    "openai": "^4.80.1"
+    "openai": "^4.80.1",
+    "typescript": "^5.7.3"
   }
 }

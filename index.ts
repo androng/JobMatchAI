@@ -42,7 +42,7 @@ async function main() {
         log("INFO", `${writtenCount} unique jobs successfully written to Google Sheets.`);
 
     } catch (error) {
-        log('ERROR', 'Workflow failed.', { error: error.stack });
+        log('ERROR', 'Workflow failed.', { error: (error as Error).stack });
     }
 }
 
