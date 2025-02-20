@@ -14,7 +14,7 @@ async function main() {
     try {
         let unparsedJobs: any[] = [];
         if (useDebugMode) {
-            unparsedJobs = readJobsFromFile("apify_outputs/vQO5g45mnm8jwognj_1_output_2025-02-16T22:40:44.580Z.json")
+            unparsedJobs = readJobsFromFile("apify_outputs/dataset_apify-ziprecruiter-scraper_2025-02-16_21-18-12-846.json")
         } else {
             // Step 1: Scrape jobs
             unparsedJobs = await scrapeJobs();
@@ -31,7 +31,7 @@ async function main() {
             title: job.Title,
             companyName: job.OrgName,
             location: job.City,
-            jobUrl: job.JobURL,
+            jobUrl: job.Href,
             pay: job.FormattedSalaryShort,
             contractType: job.EmploymentType,
             description: job.description,

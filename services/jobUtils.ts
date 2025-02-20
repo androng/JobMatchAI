@@ -6,7 +6,13 @@ function normalizeString(str: string): string {
         .toLowerCase()
         .trim()
         .replace(/\s+/g, ' ') // Replace multiple spaces with single space
-        .replace(/[^\w\s-]/g, ''); // Remove special characters except hyphen
+        .replace(/[^\w\s-]/g, '') // Remove special characters except hyphen
+        
+        // remove anything after the first comma. the searches are already filtered 
+        // to a radius of X miles so we don't need to worry about two cities with same name. 
+        // This helps to filter things like "Remote, US" or "Remote, CA" or "Los Angeles, CA" 
+        // vs "Los Angeles"
+        .split(',')[0]; 
 }
 
 function filterDuplicateJobs(existingJobs: any[], newJobs: Job[]) {

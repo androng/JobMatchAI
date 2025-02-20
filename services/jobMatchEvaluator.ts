@@ -82,21 +82,24 @@ async function evaluateJobMatch(jobData: Job, candidateSummary: string): Promise
             results.gptJobSummary = gptSummaryResponse.choices[0]?.message?.content.trim() || "";
 
             // Generate job match percentage with GPT
+            const gptMatchPrompt = generateJobMatchPrompt(jobData, candidateSummary);
+            // log("DEBUG", "GPT Match Prompt:", gptMatchPrompt);
             const gptMatchResponse = await openaiClient.chat.completions.create({
                 model: "o1-mini",
                 messages: [
                     {
                         role: "user",
-                        content: generateJobMatchPrompt(jobData, candidateSummary),
+                        content: gptMatchPrompt,
                     },
                 ],
             });
-            // log("DEBUG", "GPT Match Inputs:", { jobData, candidateSummary });
             results.gptJobMatchPercentage = gptMatchResponse.choices[0]?.message?.content.trim() || "";
             log("INFO", "GPT Processed Job Match + Job Summary", { gptJobSummary: results.gptJobSummary, gptJobMatchPercentage: results.gptJobMatchPercentage });
 
         } catch (error) {
             log("ERROR", "Error processing GPT job match:", (error as Error).message);
+            results.gptJobMatchPercentage = `${(error as Error).message}`;
+            results.gptJobSummary = `${(error as Error).message}`;
         }
     }
 
