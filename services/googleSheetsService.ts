@@ -1,8 +1,10 @@
-const { google } = require('googleapis');
+import { google } from 'googleapis';
+import fs from 'fs';
+import { log } from './loggingService.js';
+import { Job, JobAiResponses } from '../types.js';
+
 const sheets = google.sheets('v4');
-const credentials = JSON.parse(require('fs').readFileSync('google_service_account_credentials.json'));
-const { log } = require('./loggingService');
-import { Job, JobAiResponses } from '../types';
+const credentials = JSON.parse(fs.readFileSync('google_service_account_credentials.json', 'utf8'));
 
 const auth = new google.auth.GoogleAuth({
     credentials,
@@ -24,8 +26,8 @@ async function readJobsFromSheet() {
             spreadsheetId: SPREADSHEET_ID,
             range,
             auth: client,
-        });
-        const rows = response.data.values || [];
+        } as any);
+        const rows = (response as any).data.values || [];
         log('INFO', `Successfully read ${rows.length} rows from Google Sheets.`);
         return rows;
     } catch (error) {
@@ -61,12 +63,52 @@ async function writeJobToSheet(job: Job, jobAiResponses: JobAiResponses) {
             valueInputOption: "USER_ENTERED",
             resource: { values },
             auth: client,
-        });
+        } as any);
         log('INFO', 'Job successfully written to Google Sheets.');
     } catch (error) {
         log('ERROR', 'Error writing job to Google Sheets.', { error: (error as Error).message });
         throw error;
     }
 }
+async function writeJobsToSheet(jobs: Job[], jobAiResponses: JobAiResponses[]) {
+    log('INFO', 'Writing jobs to Google Sheets...');
+    const client = await auth.getClient();
+    const range = "Sheet1!A2";
 
-module.exports = { readJobsFromSheet, writeJobToSheet };
+    let values: string[][] = [];
+    for (let i = 0; i < jobs.length; i++) {
+        const job = jobs[i];
+        const jobAiResponse = jobAiResponses[i];
+        values.push(
+            [
+                job.title || "",
+                job.companyName || "",
+                job.location || "",
+                job.jobUrl || "",
+                job.pay || "",
+                job.contractType || "",
+                job.source || "",
+                jobAiResponse.gptJobMatchPercentage || "",
+                jobAiResponse.gptJobSummary || "",
+                jobAiResponse.date_generated.toISOString() || ""
+            ],
+        );
+    }
+
+    try {
+        await sheets.spreadsheets.values.append({
+            spreadsheetId: SPREADSHEET_ID,
+            range,
+            valueInputOption: "USER_ENTERED",
+            resource: { values },
+            auth: client,
+        } as any);
+        log('INFO', 'Jobs successfully written to Google Sheets.');
+    } catch (error) {
+        log('ERROR', 'Error writing jobs to Google Sheets.', { error: (error as Error).message });
+        throw error;
+    }
+}
+
+
+export { readJobsFromSheet, writeJobToSheet, writeJobsToSheet };

@@ -1,5 +1,5 @@
-const { log } = require('./loggingService');
-import { Job } from '../types';
+import { log } from './loggingService.js';
+import { Job } from '../types.js';
 
 function normalizeString(str: string): string {
     return str
@@ -44,4 +44,4 @@ function filterDuplicateJobs(existingJobs: any[], newJobs: Job[]) {
     return uniqueJobs;
 }
 
-module.exports = { filterDuplicateJobs };
+export { filterDuplicateJobs };

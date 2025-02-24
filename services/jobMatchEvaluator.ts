@@ -1,6 +1,8 @@
-const OpenAI = require("openai");
-const { log } = require('./loggingService');
-import { Job, JobAiResponses } from '../types';
+import OpenAI from 'openai';
+import { log } from './loggingService.js';
+import { Job, JobAiResponses } from '../types.js';
+import fs from 'fs';
+import { promises as fsPromises } from 'fs';
 
 const deepseekClient = new OpenAI({
     baseURL: "https://api.deepseek.com",
@@ -32,7 +34,7 @@ function generateJobMatchPrompt(jobData: Job, candidateSummary: string) {
 
     [ROLE] Job Match Evaluator
     [TASK] Assess the compatibility between the job requirements and the candidate's profile. Provide a match percentage based on the following criteria:
-        - 90% matching skills and experience 
+        - 90% matching skills and experience and job preferences
         - 10% location. 
     [RULES]
     - Analyze the following:
@@ -79,7 +81,7 @@ async function evaluateJobMatch(jobData: Job, candidateSummary: string): Promise
                     },
                 ],
             });
-            results.gptJobSummary = gptSummaryResponse.choices[0]?.message?.content.trim() || "";
+            results.gptJobSummary = gptSummaryResponse.choices[0]?.message?.content?.trim() || "";
 
             // Generate job match percentage with GPT
             const gptMatchPrompt = generateJobMatchPrompt(jobData, candidateSummary);
@@ -93,7 +95,7 @@ async function evaluateJobMatch(jobData: Job, candidateSummary: string): Promise
                     },
                 ],
             });
-            results.gptJobMatchPercentage = gptMatchResponse.choices[0]?.message?.content.trim() || "";
+            results.gptJobMatchPercentage = gptMatchResponse.choices[0]?.message?.content?.trim() || "";
             log("INFO", "GPT Processed Job Match + Job Summary", { gptJobSummary: results.gptJobSummary, gptJobMatchPercentage: results.gptJobMatchPercentage });
 
         } catch (error) {
@@ -115,7 +117,7 @@ async function evaluateJobMatch(jobData: Job, candidateSummary: string): Promise
                     },
                 ],
             });
-            results.deepSeekJobSummary = deepSeekSummaryResponse.choices[0]?.message?.content.trim() || "";
+            results.deepSeekJobSummary = deepSeekSummaryResponse.choices[0]?.message?.content?.trim() || "";
 
             // Generate job match percentage with DeepSeek
             const deepSeekMatchResponse = await deepseekClient.chat.completions.create({
@@ -127,7 +129,7 @@ async function evaluateJobMatch(jobData: Job, candidateSummary: string): Promise
                     },
                 ],
             });
-            results.deepSeekJobMatchPercentage = deepSeekMatchResponse.choices[0]?.message?.content.trim() || "";
+            results.deepSeekJobMatchPercentage = deepSeekMatchResponse.choices[0]?.message?.content?.trim() || "";
             log("INFO", "DeepSeek Processed Job Match + Job Summary", { deepSeekJobMatchPercentage: results.deepSeekJobMatchPercentage, deepSeekJobSummary: results.deepSeekJobSummary });
 
         } catch (error) {
@@ -138,6 +140,165 @@ async function evaluateJobMatch(jobData: Job, candidateSummary: string): Promise
     return results;
 }
 
-module.exports = {
+
+async function generateBatchFile(jobs: Job[], candidateSummary: string) {
+    // Generate match requests
+    const matchRequests = jobs.map((job, index) => ({
+        custom_id: `match-${index}`,
+        method: "POST",
+        url: "/v1/chat/completions",
+        body: {
+            model: "o1-mini",
+            messages: [
+                {
+                    role: "user",
+                    content: generateJobMatchPrompt(job, candidateSummary)
+                }
+            ]
+        }
+    }));
+
+    // Write file
+    const matchJsonl = matchRequests.map(req => JSON.stringify(req)).join('\n');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const batchPath = `batch_files/matches_${timestamp}.jsonl`;
+
+    await fs.promises.mkdir('batch_files', { recursive: true });
+    await fs.promises.writeFile(batchPath, matchJsonl);
+
+    return batchPath;
+}
+
+async function submitBatch(filePath: string): Promise<string> {
+    const file = await openaiClient.files.create({
+        file: fs.createReadStream(filePath),
+        purpose: "batch",
+    });
+
+    const batch = await openaiClient.batches.create({
+        input_file_id: file.id,
+        endpoint: "/v1/chat/completions",
+        completion_window: "24h"
+    });
+
+    return batch.id;
+}
+
+async function processErrorFile(errorFileId: string) {
+    if (!errorFileId) {
+        log("INFO", "No errors found in batch processing");
+        return;
+    }
+
+    try {
+        const errorFileResponse = await openaiClient.files.content(errorFileId);
+        const errorResults = await errorFileResponse.text();
+        
+        // Write raw error file to disk
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const errorLogPath = `batch_files/errors_${timestamp}.jsonl`;
+        
+        await fs.promises.writeFile(errorLogPath, errorResults);
+        
+        log("ERROR", "Batch processing encountered errors", { errorLogPath });
+
+    } catch (error) {
+        log("ERROR", "Failed to process error file", { error: (error as Error).stack });
+        throw error;
+    }
+}
+async function checkBatchStatus(batchId: string) {
+    const batch = await openaiClient.batches.retrieve(batchId);
+    log("INFO", "Batch status " + batch.status + " " + JSON.stringify(batch.request_counts) );
+    
+    // If batch failed or has errors, process the error file
+    if (batch.error_file_id || batch.status === 'failed') {
+        await processErrorFile(batch.error_file_id!);
+    }
+
+    return {
+        status: batch.status,
+        outputFileId: batch.output_file_id,
+        errorFileId: batch.error_file_id
+    };
+}
+
+async function processBatchResults(outputFileId: string, jobs: Job[]): Promise<JobAiResponses[]> {
+    log("INFO", "Processing batch results", { outputFileId });
+    const fileResponse = await openaiClient.files.content(outputFileId);
+    const results = await fileResponse.text();
+    
+    const processedResults = new Map<string, string>();
+    
+    results.split('\n')
+        .filter((line: string) => line.trim())
+        .forEach((line: string) => {
+            const result = JSON.parse(line);
+            const content = result.response.body.choices[0].message.content;
+            processedResults.set(result.custom_id, content);
+        });
+
+    return jobs.map((_, index) => ({
+        gptJobSummary: "",
+        gptJobMatchPercentage: processedResults.get(`match-${index}`) || "",
+        deepSeekJobSummary: "",
+        deepSeekJobMatchPercentage: "",
+        date_generated: new Date(),
+    }));
+}
+
+async function batchProcessJobs(jobs: Job[], candidateSummary: string) {
+    try {
+        // Generate batch file
+        const batchPath = await generateBatchFile(jobs, candidateSummary);
+        log("INFO", "Generated batch file", { batchPath });
+
+        // Submit batch
+        const batchId = await submitBatch(batchPath);
+        log("INFO", "Submitted batch", { batchId });
+        // In case something went wrong, use hardcoded batch id here
+        // const batchId = "batch_67b70acc11888190a8dd46c9bd300b5c";
+
+        // Poll for completion with exponential backoff but a max of 10 minutes
+        let pollInterval = 1000; // 1 second
+        const MAX_POLL_INTERVAL = 10 * 60 * 1000; // 10 minutes
+        // set date 24 hours from now
+        const TIMEOUT = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+        while (true) { // Simple polling loop
+            if (new Date() > TIMEOUT) {
+                throw new Error("Batch processing timeout");
+            }
+        
+            const batchStatus = await checkBatchStatus(batchId);
+        
+            if (batchStatus.status === 'failed' 
+                || batchStatus.status === 'cancelled'
+                || batchStatus.status === 'expired') {
+                throw new Error("Batch processing " + batchStatus.status);
+            }
+        
+            if (batchStatus.status === 'completed') {
+                // Even if completed, there might be partial errors
+                if (batchStatus.errorFileId) {
+                    log("WARN", "Batch completed with some errors");
+                    await processErrorFile(batchStatus.errorFileId);
+                }
+                return await processBatchResults(batchStatus.outputFileId!, jobs);
+            }
+        
+            // Exponential backoff for polling
+            await new Promise(resolve => setTimeout(resolve, pollInterval));
+            pollInterval = Math.min(pollInterval * 1.2, MAX_POLL_INTERVAL);
+        }
+
+    } catch (error) {
+        log("ERROR", "Batch processing failed", { error: (error as Error).message });
+        throw error;
+    }
+}
+
+export{
     evaluateJobMatch,
+    batchProcessJobs,
 };

@@ -6,3 +6,4 @@ apify_outputs/
 google_service_account_credentials.json
 candidate_summary.txt
 dist/
+batch_files

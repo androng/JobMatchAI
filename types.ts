@@ -16,3 +16,14 @@ export interface JobAiResponses {
     deepSeekJobMatchPercentage: string;
     date_generated: Date; // helps with debugging later when this script is run many times 
 }
+
+export interface ApifyActor {
+    id: string;
+    name: string;
+}
+
+export interface UnparsedJobList {
+    actorId: string;
+    actorName: string;
+    unparsed_jobs: unknown[];
+}
