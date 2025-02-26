@@ -34,12 +34,13 @@ function generateJobMatchPrompt(jobData: Job, candidateSummary: string) {
 
     [ROLE] Job Match Evaluator
     [TASK] Assess the compatibility between the job requirements and the candidate's profile. Provide a match percentage based on the following criteria:
-        - 90% matching skills and experience and job preferences
-        - 10% location. 
+        - 45% matching skills and experience 
+        - 45% matching job preferences
+        - 10% location preferences. 
     [RULES]
     - Analyze the following:
-      - JOB SUMMARY: ${JSON.stringify(jobData)}
-      - CANDIDATE: ${candidateSummary}
+      - <JOB_SUMMARY> ${JSON.stringify(jobData)} </JOB_SUMMARY>
+      - <CANDIDATE_SUMMARY> ${candidateSummary} </CANDIDATE_SUMMARY>
     - OUTPUT: ONLY the match percentage as a number between 0 and 100, with NO extra text or symbols.
 
     MATCH PERCENTAGE:`;

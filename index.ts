@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { scrapeJobs } from './services/apifyService.js';
-import { readJobsFromFile } from './services/fileService.js';
+import { readJSONFromFile } from './services/fileService.js';
 import { readJobsFromSheet, writeJobToSheet, writeJobsToSheet } from './services/googleSheetsService.js';
 import { filterDuplicateJobs } from './services/jobUtils.js';
 import { batchProcessJobs } from './services/jobMatchEvaluator.js';
@@ -45,31 +45,35 @@ function parseJobs(jobLists: UnparsedJobList[]): Job[] {
 }
 async function main() {
     log('INFO', 'Starting Job Scraper Workflow...');
+    // TODO move the parallel scraping out of the apify function and into the main function
     try {
         let unparsedJobs: UnparsedJobList[] = [];
         if (useDebugMode) {
 
             // hardcode the Apify output file for debugging
             unparsedJobs = [
-                {
-                    actorId: "qA8rz8tR61HdkfTBL",
-                    actorName: "curious_coder/indeed-scraper",
-                    unparsed_jobs: readJobsFromFile("apify_outputs/qA8rz8tR61HdkfTBL_production_assistant_SF_2025-02-23_23-19-35-615.json")
-                }
+                readJSONFromFile("apify_outputs/qA8rz8tR61HdkfTBL_production_assistant_LA_output_2025-02-24T02:49:02.972Z.json"),
+                readJSONFromFile("apify_outputs/qA8rz8tR61HdkfTBL_production_assistant_NY_output_2025-02-24T02:24:20.629Z.json"),
+                readJSONFromFile("apify_outputs/qA8rz8tR61HdkfTBL_production_assistant_SD_output_2025-02-24T02:13:52.357Z.json"),
+                readJSONFromFile("apify_outputs/qA8rz8tR61HdkfTBL_production_assistant_SF_output_2025-02-24T02:21:04.178Z.json"),
             ]
+            
             
         } else {
             // Step 1: Scrape jobs from ALL input files and save them to files
             unparsedJobs = await scrapeJobs();
         }
         // Convert jobs to standard format
-        // TODO: make multiple parsers for different actors 
         let parsedJobs: Job[] = parseJobs(unparsedJobs);
 
         // Step 3: Filter out duplicates
         const sheetData = await readJobsFromSheet();
         const existingJobs = sheetData.slice(1);
         const uniqueJobs = filterDuplicateJobs(existingJobs, parsedJobs);
+        if(uniqueJobs.length == 0){
+            log("INFO", "No new jobs found");
+            return;
+        }
 
         const BATCH = true; // Batch = 50% OpenAI discount in exchange for 24h or less completion time
 
