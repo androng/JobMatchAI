@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { log } from './loggingService.js';  
 import { readJSONFromFile } from './fileService.js';  
-import { ApifyActor, UnparsedJobList } from '../types.js'; 
+import { ApifyActor, UnparsedJobList, Job } from '../types.js'; 
 
 const APIFY_API_KEY = process.env.APIFY_API_KEY;
 
@@ -26,9 +26,55 @@ const apifyActors: ApifyActor[] = [
     {
         id: "qA8rz8tR61HdkfTBL",
         name: "curious_coder/indeed-scraper"
+    }, 
+    {
+        id: "hKByXkMQaC5Qt9UMN",
+        name: "curious_coder/linkedin-jobs-scraper"
     }
 ]; 
 
+function parseJobs(jobLists: UnparsedJobList[]): Job[] {
+    return jobLists.flatMap(jobList => {
+        switch (jobList.actorName) {
+            case 'curious_coder/linkedin-jobs-scraper':
+                return jobList.unparsed_jobs.map((job: any) => ({
+                    title: job.title,
+                    companyName: job.companyName,
+                    location: job.location,
+                    jobUrl: job.link,
+                    pay: job.salaryInfo.join(' - '),
+                    contractType: job.employmentType,
+                    description: job.descriptionText + '\n' + job.companyDescription,
+                    source: `LinkedIn via Apify https://console.apify.com/actors/${jobList.actorId}/information/latest/readme`
+                }));
+            case 'memo23/apify-ziprecruiter-scraper':
+                return jobList.unparsed_jobs.map((job: any) => ({
+                    title: job.Title,
+                    companyName: job.OrgName,
+                    location: job.City,
+                    jobUrl: job.Href,
+                    pay: job.FormattedSalaryShort,
+                    contractType: job.EmploymentType,
+                    description: job.description,
+                    source: `ZipRecruiter via Apify https://console.apify.com/actors/${jobList.actorId}/information/latest/readme`
+                }));
+            case 'curious_coder/indeed-scraper':
+                return jobList.unparsed_jobs.map((job: any) => ({
+                    title: job.displayTitle,
+                    companyName: job.company,
+                    location: job.jobLocationCity,
+                    jobUrl: job.thirdPartyApplyUrl?.replace('indeed.com//', 'indeed.com/'),
+                    pay: job.salarySnippet.text,
+                    contractType: job.jobTypes[0] || '',
+                    description: job.jobDescription,
+                    source: `Indeed via Apify https://console.apify.com/actors/${jobList.actorId}/information/latest/readme`
+                }));
+            default:
+                log('WARN', `No parser found for actor: ${jobList.actorName}`);
+                return [];
+        }
+    });
+}
 async function scrapeJobs(): Promise<UnparsedJobList[]> {
     log('INFO', 'Initializing Apify client...');
 
@@ -121,4 +167,4 @@ async function scrapeJobs(): Promise<UnparsedJobList[]> {
     return allResults;
 }
 
-export { scrapeJobs };
+export { scrapeJobs , parseJobs};

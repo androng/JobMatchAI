@@ -14,6 +14,7 @@ export interface JobAiResponses {
     gptMeetsEmployerRequirements: string;
     gptMeetsCandidateRequirements: string;
     gptJobMatchPercentage: string; // = the above two multiplied together
+    gptJobMatchPercentageReasons: string; // the primary reasons for the scores in the third argument. e.g. 50,50,"❌requires bilingual,  ✅ on career track, ❌dead end job" or any other insight. These reaons will go on a single cell in a spreadsheet.
     deepSeekJobSummary: string;
     deepSeekJobMatchPercentage: string;
     date_generated: Date; // helps with debugging later when this script is run many times 

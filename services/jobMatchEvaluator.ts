@@ -42,6 +42,7 @@ function generateJobMatchPrompt(jobData: Job, candidateSummary: string) {
         - <CANDIDATE_SUMMARY> ${candidateSummary} </CANDIDATE_SUMMARY>
     [OUTPUT]
         - A, B as comma separated values, no % symbol, no markdown. eg 50,50
+        - and then the primary reasons for the scores in the third argument. e.g. 50,50,"❌requires bilingual,  ✅ on career track, ❌dead end job" or any other insight. These reaons will go on a single cell in a spreadsheet.
         - If there is an error then output the error instead. e.g. if something is missing
     `;
 }
@@ -52,6 +53,7 @@ async function evaluateJobMatch(jobData: Job, candidateSummary: string): Promise
         gptMeetsEmployerRequirements: "",
         gptMeetsCandidateRequirements: "",
         gptJobMatchPercentage: "",
+        gptJobMatchPercentageReasons: "",
         deepSeekJobSummary: "",
         deepSeekJobMatchPercentage: "",
         date_generated: new Date(),
@@ -252,7 +254,7 @@ async function processBatchResults(outputFileId: string, jobs: Job[]): Promise<J
         let employerFit = "";
         let candidateFit = "";
         let matchPercentage = "";
-
+        let matchPercentageReasons = "";
         // Parse A,B values and calculate match percentage
         const [a, b] = matchResult.split(',').map(v => parseFloat(v.trim()));
         if (!isNaN(a) && !isNaN(b)) {
@@ -262,11 +264,16 @@ async function processBatchResults(outputFileId: string, jobs: Job[]): Promise<J
             matchPercentage = (Math.round((a * b / 100))).toString();
         }
 
+        // Parse the reasons
+        const reasons = matchResult.split('"')[1].split(',').map(v => v.trim());
+        matchPercentageReasons = reasons.join(', ');
+
         return {
             gptJobSummary: "",
             gptMeetsEmployerRequirements: employerFit,
             gptMeetsCandidateRequirements: candidateFit,
             gptJobMatchPercentage: matchPercentage,
+            gptJobMatchPercentageReasons: matchPercentageReasons,
             deepSeekJobSummary: "",
             deepSeekJobMatchPercentage: "",
             date_generated: new Date(),
