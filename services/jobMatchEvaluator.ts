@@ -34,21 +34,23 @@ function generateJobMatchPrompt(jobData: Job, candidateSummary: string) {
 
     [ROLE] Job Match Evaluator
     [TASK] Assess the compatibility between the job requirements and the candidate's profile. Provide a match percentage based on the following criteria:
-        - 45% matching skills and experience 
-        - 45% matching job preferences
-        - 10% location preferences. 
-    [RULES]
-    - Analyze the following:
-      - <JOB_SUMMARY> ${JSON.stringify(jobData)} </JOB_SUMMARY>
-      - <CANDIDATE_SUMMARY> ${candidateSummary} </CANDIDATE_SUMMARY>
-    - OUTPUT: ONLY the match percentage as a number between 0 and 100, with NO extra text or symbols.
-
-    MATCH PERCENTAGE:`;
+        - A% (Employer Fit Score): How well the candidate's skills, experience, and qualifications match the employer's need
+        - B% (Candidate Fit Score): How well the job aligns with the candidate's preferences (e.g., role, location, salary, company type).  
+        
+    [INPUTS]    
+        - <JOB_SUMMARY> ${JSON.stringify(jobData)} </JOB_SUMMARY>
+        - <CANDIDATE_SUMMARY> ${candidateSummary} </CANDIDATE_SUMMARY>
+    [OUTPUT]
+        - A, B as comma separated values, no % symbol, no markdown. eg 50,50
+        - If there is an error then output the error instead. e.g. if something is missing
+    `;
 }
 
 async function evaluateJobMatch(jobData: Job, candidateSummary: string): Promise<JobAiResponses> {
     const results: JobAiResponses = {
         gptJobSummary: "",
+        gptMeetsEmployerRequirements: "",
+        gptMeetsCandidateRequirements: "",
         gptJobMatchPercentage: "",
         deepSeekJobSummary: "",
         deepSeekJobMatchPercentage: "",
@@ -137,7 +139,7 @@ async function evaluateJobMatch(jobData: Job, candidateSummary: string): Promise
             log("ERROR", "Error processing DeepSeek job match:", (error as Error).message);
         }
     }
-``
+
     return results;
 }
 
@@ -229,6 +231,12 @@ async function processBatchResults(outputFileId: string, jobs: Job[]): Promise<J
     const fileResponse = await openaiClient.files.content(outputFileId);
     const results = await fileResponse.text();
     
+    // Write raw batch results to file
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const batchOutputPath = `batch_files/output_${timestamp}.jsonl`;
+    await fsPromises.writeFile(batchOutputPath, results);
+    log("INFO", "Wrote batch output to file", { batchOutputPath });
+    
     const processedResults = new Map<string, string>();
     
     results.split('\n')
@@ -239,13 +247,31 @@ async function processBatchResults(outputFileId: string, jobs: Job[]): Promise<J
             processedResults.set(result.custom_id, content);
         });
 
-    return jobs.map((_, index) => ({
-        gptJobSummary: "",
-        gptJobMatchPercentage: processedResults.get(`match-${index}`) || "",
-        deepSeekJobSummary: "",
-        deepSeekJobMatchPercentage: "",
-        date_generated: new Date(),
-    }));
+    return jobs.map((_, index) => {
+        const matchResult = processedResults.get(`match-${index}`) || "";
+        let employerFit = "";
+        let candidateFit = "";
+        let matchPercentage = "";
+
+        // Parse A,B values and calculate match percentage
+        const [a, b] = matchResult.split(',').map(v => parseFloat(v.trim()));
+        if (!isNaN(a) && !isNaN(b)) {
+            employerFit = a.toString();
+            candidateFit = b.toString();
+            // Calculate A*B/100 and round to 2 significant figures
+            matchPercentage = (Math.round((a * b / 100))).toString();
+        }
+
+        return {
+            gptJobSummary: "",
+            gptMeetsEmployerRequirements: employerFit,
+            gptMeetsCandidateRequirements: candidateFit,
+            gptJobMatchPercentage: matchPercentage,
+            deepSeekJobSummary: "",
+            deepSeekJobMatchPercentage: "",
+            date_generated: new Date(),
+        };
+    });
 }
 
 async function batchProcessJobs(jobs: Job[], candidateSummary: string) {
@@ -299,7 +325,9 @@ async function batchProcessJobs(jobs: Job[], candidateSummary: string) {
     }
 }
 
-export{
+
+export {
     evaluateJobMatch,
     batchProcessJobs,
+
 };

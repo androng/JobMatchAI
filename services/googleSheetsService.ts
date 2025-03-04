@@ -50,8 +50,9 @@ async function writeJobToSheet(job: Job, jobAiResponses: JobAiResponses) {
             job.pay || "",
             job.contractType || "",
             job.source || "",
+            jobAiResponses.gptMeetsEmployerRequirements || "",
+            jobAiResponses.gptMeetsCandidateRequirements || "",
             jobAiResponses.gptJobMatchPercentage || "",
-            jobAiResponses.gptJobSummary || "",
             jobAiResponses.date_generated || ""
         ],
     ];
@@ -88,8 +89,9 @@ async function writeJobsToSheet(jobs: Job[], jobAiResponses: JobAiResponses[]) {
                 job.pay || "",
                 job.contractType || "",
                 job.source || "",
+                jobAiResponse.gptMeetsEmployerRequirements || "",
+                jobAiResponse.gptMeetsCandidateRequirements || "",
                 jobAiResponse.gptJobMatchPercentage || "",
-                jobAiResponse.gptJobSummary || "",
                 jobAiResponse.date_generated.toISOString() || ""
             ],
         );

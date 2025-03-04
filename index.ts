@@ -6,7 +6,7 @@ import { filterDuplicateJobs } from './services/jobUtils.js';
 import { batchProcessJobs } from './services/jobMatchEvaluator.js';
 import { log } from './services/loggingService.js';
 import { evaluateJobMatch } from './services/jobMatchEvaluator.js';
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 import { Job, JobAiResponses, UnparsedJobList } from './types.js';
 const candidateSummary = readFileSync('./candidate_summary.txt', 'utf8');
 const useDebugMode = process.env.DEBUG_MODE === "true";
@@ -15,6 +15,17 @@ const useDebugMode = process.env.DEBUG_MODE === "true";
 function parseJobs(jobLists: UnparsedJobList[]): Job[] {
     return jobLists.flatMap(jobList => {
         switch (jobList.actorName) {
+            case 'curious_coder/linkedin-jobs-scraper':
+                return jobList.unparsed_jobs.map((job: any) => ({
+                    title: job.title,
+                    companyName: job.companyName,
+                    location: job.location,
+                    jobUrl: job.link,
+                    pay: job.salaryInfo.join(' - '),
+                    contractType: job.employmentType,
+                    description: job.descriptionText + '\n' + job.companyDescription,
+                    source: `LinkedIn via Apify https://console.apify.com/actors/${jobList.actorId}/information/latest/readme`
+                }));
             case 'memo23/apify-ziprecruiter-scraper':
                 return jobList.unparsed_jobs.map((job: any) => ({
                     title: job.Title,
@@ -45,19 +56,27 @@ function parseJobs(jobLists: UnparsedJobList[]): Job[] {
 }
 async function main() {
     log('INFO', 'Starting Job Scraper Workflow...');
-    // TODO move the parallel scraping out of the apify function and into the main function
+    /* The job scraping is done in parallel. This script will wait for all Apify actors/jobs to finish before the GPT evaluation to prevent GPT from processing duplicate jobs from different searches/Apify actors. 
+    
+    Alternatively, to lower latency, the GPT evaluation can be done with a queue where one Apify run is filtered at a time. Two Apify runs at a time might have duplicate jobs.  
+    */
     try {
         let unparsedJobs: UnparsedJobList[] = [];
         if (useDebugMode) {
-
             // hardcode the Apify output file for debugging
-            unparsedJobs = [
-                readJSONFromFile("apify_outputs/qA8rz8tR61HdkfTBL_production_assistant_LA_output_2025-02-24T02:49:02.972Z.json"),
-                readJSONFromFile("apify_outputs/qA8rz8tR61HdkfTBL_production_assistant_NY_output_2025-02-24T02:24:20.629Z.json"),
-                readJSONFromFile("apify_outputs/qA8rz8tR61HdkfTBL_production_assistant_SD_output_2025-02-24T02:13:52.357Z.json"),
-                readJSONFromFile("apify_outputs/qA8rz8tR61HdkfTBL_production_assistant_SF_output_2025-02-24T02:21:04.178Z.json"),
-            ]
+            // unparsedJobs = [
+            //     readJSONFromFile("apify_outputs/andrew-test.json"),
+            // ]
             
+            // Read all JSON files from apify_outputs directory
+            const files = readdirSync('apify_outputs')
+                .filter(file => file.endsWith('.json'));
+            
+            unparsedJobs = files.map(file => 
+                readJSONFromFile(`apify_outputs/${file}`)
+            );
+
+            // unparsedJobs = unparsedJobs.slice(0, 1);
             
         } else {
             // Step 1: Scrape jobs from ALL input files and save them to files
@@ -76,6 +95,8 @@ async function main() {
         }
 
         const BATCH = true; // Batch = 50% OpenAI discount in exchange for 24h or less completion time
+        /* Batch dashboard to cancel batches: https://platform.openai.com/batches/ */
+
 
         if (BATCH) { 
              // Step 4: Process all jobs in batch

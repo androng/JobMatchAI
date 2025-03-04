@@ -11,7 +11,9 @@ export interface Job {
 
 export interface JobAiResponses {
     gptJobSummary: string;
-    gptJobMatchPercentage: string;
+    gptMeetsEmployerRequirements: string;
+    gptMeetsCandidateRequirements: string;
+    gptJobMatchPercentage: string; // = the above two multiplied together
     deepSeekJobSummary: string;
     deepSeekJobMatchPercentage: string;
     date_generated: Date; // helps with debugging later when this script is run many times 
