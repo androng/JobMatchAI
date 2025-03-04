@@ -42,7 +42,7 @@ function generateJobMatchPrompt(jobData: Job, candidateSummary: string) {
         - <CANDIDATE_SUMMARY> ${candidateSummary} </CANDIDATE_SUMMARY>
     [OUTPUT]
         - A, B as comma separated values, no % symbol, no markdown. eg 50,50
-        - and then the primary reasons for the scores in the third argument. e.g. 50,50,"❌requires bilingual,  ✅ on career track, ❌dead end job" or any other insight. These reaons will go on a single cell in a spreadsheet.
+        - and then the primary reasons for the scores in the third argument. e.g. 50,50,"❌requires bilingual,  ✅ on career track, ❌dead end job" or any other insight. Put all reasons on one line.
         - If there is an error then output the error instead. e.g. if something is missing
     `;
 }
@@ -255,18 +255,48 @@ async function processBatchResults(outputFileId: string, jobs: Job[]): Promise<J
         let candidateFit = "";
         let matchPercentage = "";
         let matchPercentageReasons = "";
-        // Parse A,B values and calculate match percentage
-        const [a, b] = matchResult.split(',').map(v => parseFloat(v.trim()));
-        if (!isNaN(a) && !isNaN(b)) {
-            employerFit = a.toString();
-            candidateFit = b.toString();
-            // Calculate A*B/100 and round to 2 significant figures
-            matchPercentage = (Math.round((a * b / 100))).toString();
+        
+        try {
+            // Try to parse the response using a regex pattern that's more robust
+            const responsePattern = /^(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*"(.+)"$/;
+            const match = matchResult.match(responsePattern);
+            
+            if (match) {
+                // Successfully matched the expected format: A,B,"reasons"
+                employerFit = match[1];
+                candidateFit = match[2];
+                matchPercentageReasons = match[3].trim();
+                matchPercentage = (Math.round((parseFloat(employerFit) * parseFloat(candidateFit) / 100))).toString();
+            } else {
+                // Fall back to original approach if regex doesn't match
+                const parts = matchResult.split(',');
+                const a = parseFloat(parts[0]?.trim() || "0");
+                const b = parseFloat(parts[1]?.trim() || "0");
+                
+                if (!isNaN(a) && !isNaN(b)) {
+                    employerFit = a.toString();
+                    candidateFit = b.toString();
+                    matchPercentage = (Math.round((a * b / 100))).toString();
+                    
+                    // Try to extract reasons from the remaining parts
+                    if (parts.length > 2) {
+                        // Join everything after the second comma and remove any surrounding quotes
+                        matchPercentageReasons = parts.slice(2).join(',')
+                            .replace(/^"?(.+?)"?$/, '$1').trim();
+                    }
+                }
+                else {
+                    /* put everything in the reasons field */
+                    matchPercentageReasons = matchResult;
+                }
+            }
+        } catch (error) {
+            log("WARN", "Failed to parse match result", { 
+                matchResult, 
+                error: (error as Error).message 
+            });
+            // Keep empty strings for the fields that couldn't be parsed
         }
-
-        // Parse the reasons
-        const reasons = matchResult.split('"')[1].split(',').map(v => v.trim());
-        matchPercentageReasons = reasons.join(', ');
 
         return {
             gptJobSummary: "",
