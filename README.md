@@ -8,6 +8,8 @@ Output:
 
 ![Output](./screenshot.png "Output")
 
+Tutorial: https://www.youtube.com/watch?v=eRQZALTfbp4
+
 ## Prerequisites
 
 - Node.js (v16 or higher)
@@ -30,7 +32,7 @@ Output:
    ```bash
    npm install
    ```
-1. Make a copy of this Google Spreadsheet and delete all the rows https://docs.google.com/spreadsheets/d/1x1e6GtfTl7LYh65MhVQtKApvwfsIdhXpFGPmXd57C8c/edit?gid=1330056534#gid=1330056534 The columns in the spreadsheet are:
+1. Make a copy of this Google Spreadsheet and delete all the rows https://docs.google.com/spreadsheets/d/1x1e6GtfTl7LYh65MhVQtKApvwfsIdhXpFGPmXd57C8c/edit?gid=1330056534#gid=1330056534 In case the link is dead, the the columns in the spreadsheet are:
    - Job Title	
    - Company	
    - Location	
