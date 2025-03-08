@@ -1,6 +1,6 @@
 # JobMatchAI
 
-JobMatchAI is a Typescript application that removes irrelevant and unqualified jobs using ChatGPT and Google Sheets. This lets you focus on relevant jobs. 
+JobMatchAI is a Typescript application that can input a LinkedIn/ZipRecruiter/Indeed URL, read the jobs from that webpage, then remove irrelevant and unqualified jobs using ChatGPT. This saves your effort as a job seeker by only applying to the relevant jobs. 
 
 ![Workflow Overview](./JobMatchAI-v1.png "Automated Job Search Workflow")
 
