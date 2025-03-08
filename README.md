@@ -30,7 +30,20 @@ Output:
    ```bash
    npm install
    ```
-1. Make a copy of this Google Spreadsheet and delete all the rows https://docs.google.com/spreadsheets/d/1x1e6GtfTl7LYh65MhVQtKApvwfsIdhXpFGPmXd57C8c/edit?gid=1330056534#gid=1330056534 
+1. Make a copy of this Google Spreadsheet and delete all the rows https://docs.google.com/spreadsheets/d/1x1e6GtfTl7LYh65MhVQtKApvwfsIdhXpFGPmXd57C8c/edit?gid=1330056534#gid=1330056534 The columns in the spreadsheet are:
+   - Job Title	
+   - Company	
+   - Location	
+   - Job URL	
+   - Pay	
+   - Full-time/Contract	
+   - Source	
+   - Candidate Meets Job Requirements	
+   - Job Meets Candidate Requirements	
+   - Previous Columns Multiplied	
+   - Date Generated	
+   - Reasons for score																				
+
 1. Edit the sharing settings of the Google Sheet to allow the service account to read and write to the sheet. Or just allow everyone with the link to read and write to the sheet. 
 
 1. Set up environment variables:
