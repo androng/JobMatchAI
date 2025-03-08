@@ -4,28 +4,29 @@ import { Job, JobAiResponses } from '../types.js';
 import fs from 'fs';
 import { promises as fsPromises } from 'fs';
 
-const deepseekClient = new OpenAI({
-    baseURL: "https://api.deepseek.com",
-    apiKey: process.env.DEEPSEEK_API_KEY,
-});
+// Replace the global client initialization with function-based clients
+let openaiClient: OpenAI | null = null;
+let deepseekClient: OpenAI | null = null;
 
-const openaiClient = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+// Helper function to get or initialize the OpenAI client
+function getOpenAIClient(): OpenAI {
+    if (!openaiClient) {
+        openaiClient = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+        });
+    }
+    return openaiClient;
+}
 
-// Helper to generate job summary prompt
-function generateJobSummaryPrompt(jobData: Job) {
-    return `Job Summary Generation Prompt:
-
-    [ROLE] Job Summary Generator
-    [TASK] Create a concise summary with additional insights, EXACTLY FORMAT: "Role|Key Skills|Job Details|Location"
-    [RULES]
-    - MAX 250 CHARACTERS
-    - INCLUDE INSIGHTS ABOUT KEY RESPONSIBILITIES AND QUALIFICATIONS
-    - NO redundant words, NO Markdown, NO formatting tags
-
-    RAW DATA: ${JSON.stringify(jobData)}
-    RESPONSE:`;
+// Helper function to get or initialize the DeepSeek client
+function getDeepSeekClient(): OpenAI {
+    if (!deepseekClient) {
+        deepseekClient = new OpenAI({
+            baseURL: "https://api.deepseek.com",
+            apiKey: process.env.DEEPSEEK_API_KEY,
+        });
+    }
+    return deepseekClient;
 }
 
 // Helper to generate job match prompt
@@ -76,23 +77,12 @@ async function evaluateJobMatch(jobData: Job, candidateSummary: string): Promise
 
     if (useGPT) {
         try {
-            // Generate job summary with GPT
-            const gptSummaryResponse = await openaiClient.chat.completions.create({
-                model: "gpt-4-turbo",
-                messages: [
-                    {
-                        role: "user",
-                        content: generateJobSummaryPrompt(jobData),
-                    },
-                ],
-            });
-            results.gptJobSummary = gptSummaryResponse.choices[0]?.message?.content?.trim() || "";
 
             // Generate job match percentage with GPT
             const gptMatchPrompt = generateJobMatchPrompt(jobData, candidateSummary);
             // log("DEBUG", "GPT Match Prompt:", gptMatchPrompt);
-            const gptMatchResponse = await openaiClient.chat.completions.create({
-                model: "o1-mini",
+            const gptMatchResponse = await getOpenAIClient().chat.completions.create({
+                model: "o1-mini", // results were very bad with gpt-4-turbo when I first tried it. 
                 messages: [
                     {
                         role: "user",
@@ -101,31 +91,18 @@ async function evaluateJobMatch(jobData: Job, candidateSummary: string): Promise
                 ],
             });
             results.gptJobMatchPercentage = gptMatchResponse.choices[0]?.message?.content?.trim() || "";
-            log("INFO", "GPT Processed Job Match + Job Summary", { gptJobSummary: results.gptJobSummary, gptJobMatchPercentage: results.gptJobMatchPercentage });
+            log("INFO", "GPT Processed Job Match", { gptJobMatchPercentage: results.gptJobMatchPercentage });
 
         } catch (error) {
             log("ERROR", "Error processing GPT job match:", (error as Error).message);
             results.gptJobMatchPercentage = `${(error as Error).message}`;
-            results.gptJobSummary = `${(error as Error).message}`;
         }
     }
 
     if (useDeepSeek) {
         try {
-            // Generate job summary with DeepSeek
-            const deepSeekSummaryResponse = await deepseekClient.chat.completions.create({
-                model: "deepseek-chat",
-                messages: [
-                    {
-                        role: "user",
-                        content: generateJobSummaryPrompt(jobData),
-                    },
-                ],
-            });
-            results.deepSeekJobSummary = deepSeekSummaryResponse.choices[0]?.message?.content?.trim() || "";
-
             // Generate job match percentage with DeepSeek
-            const deepSeekMatchResponse = await deepseekClient.chat.completions.create({
+            const deepSeekMatchResponse = await getDeepSeekClient().chat.completions.create({
                 model: "deepseek-chat",
                 messages: [
                     {
@@ -135,7 +112,7 @@ async function evaluateJobMatch(jobData: Job, candidateSummary: string): Promise
                 ],
             });
             results.deepSeekJobMatchPercentage = deepSeekMatchResponse.choices[0]?.message?.content?.trim() || "";
-            log("INFO", "DeepSeek Processed Job Match + Job Summary", { deepSeekJobMatchPercentage: results.deepSeekJobMatchPercentage, deepSeekJobSummary: results.deepSeekJobSummary });
+            log("INFO", "DeepSeek Processed Job Match", { deepSeekJobMatchPercentage: results.deepSeekJobMatchPercentage });
 
         } catch (error) {
             log("ERROR", "Error processing DeepSeek job match:", (error as Error).message);
@@ -175,12 +152,12 @@ async function generateBatchFile(jobs: Job[], candidateSummary: string) {
 }
 
 async function submitBatch(filePath: string): Promise<string> {
-    const file = await openaiClient.files.create({
+    const file = await getOpenAIClient().files.create({
         file: fs.createReadStream(filePath),
         purpose: "batch",
     });
 
-    const batch = await openaiClient.batches.create({
+    const batch = await getOpenAIClient().batches.create({
         input_file_id: file.id,
         endpoint: "/v1/chat/completions",
         completion_window: "24h"
@@ -196,7 +173,7 @@ async function processErrorFile(errorFileId: string) {
     }
 
     try {
-        const errorFileResponse = await openaiClient.files.content(errorFileId);
+        const errorFileResponse = await getOpenAIClient().files.content(errorFileId);
         const errorResults = await errorFileResponse.text();
         
         // Write raw error file to disk
@@ -213,7 +190,7 @@ async function processErrorFile(errorFileId: string) {
     }
 }
 async function checkBatchStatus(batchId: string) {
-    const batch = await openaiClient.batches.retrieve(batchId);
+    const batch = await getOpenAIClient().batches.retrieve(batchId);
     log("INFO", "Batch status " + batch.status + " " + JSON.stringify(batch.request_counts) );
     
     // If batch failed or has errors, process the error file
@@ -230,7 +207,7 @@ async function checkBatchStatus(batchId: string) {
 
 async function processBatchResults(outputFileId: string, jobs: Job[]): Promise<JobAiResponses[]> {
     log("INFO", "Processing batch results", { outputFileId });
-    const fileResponse = await openaiClient.files.content(outputFileId);
+    const fileResponse = await getOpenAIClient().files.content(outputFileId);
     const results = await fileResponse.text();
     
     // Write raw batch results to file

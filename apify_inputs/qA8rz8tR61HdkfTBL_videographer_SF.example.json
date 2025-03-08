@@ -1,0 +1,17 @@
+{
+  "findContacts": false,
+  "findContacts.position": [
+    "founder",
+    "director"
+  ],
+  "outputSchema": "raw",
+  "proxy": {
+    "useApifyProxy": true,
+    "apifyProxyGroups": [
+      "RESIDENTIAL"
+    ]
+  },
+  "scrapeJobs.scrapeCompany": false,
+  "scrapeJobs.searchUrl": "https://www.indeed.com/jobs?q=videographer&l=San+Francisco%2C+CA&salaryType=%2440%2C000&radius=100&from=searchOnDesktopSerp&vjk=6599572f21e3d7fe",
+  "useBrowser": true
+}

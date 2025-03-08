@@ -1,0 +1,19 @@
+{
+  "maxItems": 10000,
+  "proxy": {
+    "useApifyProxy": true,
+    "apifyProxyGroups": [
+      "RESIDENTIAL"
+    ],
+    "apifyProxyCountry": "US"
+  },
+  "startUrls": [
+    {
+      "url": "https://www.ziprecruiter.com/jobs-search?search=video+producer&location=San+Francisco%2C+CA&refine_by_location_type=&radius=100&days=&refine_by_employment=employment_type%3Aall&refine_by_salary=&refine_by_salary_ceil=&lvk=1p_YcDhr94gP-VCH3TwzAw.--NiG1IjqhR",
+      "method": "GET"
+    }
+  ],
+  "maxConcurrency": 10,
+  "minConcurrency": 1,
+  "maxRequestRetries": 30
+}

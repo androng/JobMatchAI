@@ -8,25 +8,50 @@ import { log } from './services/loggingService.js';
 import { evaluateJobMatch } from './services/jobMatchEvaluator.js';
 import { readFileSync, readdirSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { Job, JobAiResponses, UnparsedJobList } from './types.js';
-const candidateSummary = readFileSync('./candidate_summary.txt', 'utf8');
 const useDebugMode = process.env.DEBUG_MODE === "true";
 
+// Validate all required environment variables at startup
+function validateEnvironment() {
+    // Check if file exists
+    if (!existsSync('./.env')) {
+        log('ERROR', 'Missing required file: ', `.env`);
+        log('INFO', 'Please rename .env.example to .env and add your API keys');
+        process.exit(1);
+    }   
+    // Check if file exists
+    if (!existsSync('./candidate_summary.txt')) {
+        log('ERROR', 'Missing required file: ', `candidate_summary.txt`);
+        log('INFO', 'Please rename candidate_summary.example.txt to candidate_summary.txt and add your resume and job preferences');
+        process.exit(1);
+    }   
+
+    const requiredVars = [
+        'APIFY_API_KEY',
+        'SPREADSHEET_ID',
+        'OPENAI_API_KEY',
+    ];
+    
+    const missing = requiredVars.filter(key => !process.env[key]);
+
+    if (missing.length > 0) {
+        log('ERROR', `Missing required environment variables:`, { missing });
+        log('INFO', 'Please add these to your .env file');
+        process.exit(1);
+    }
+}
 
 async function main() {
     log('INFO', 'Starting Job Scraper Workflow...');
-    /* The job scraping is done in parallel. This script will wait for all Apify actors/jobs to finish before the GPT evaluation to prevent GPT from processing duplicate jobs from different searches/Apify actors. 
+
+    validateEnvironment();
     
-    Alternatively, to lower latency, the GPT evaluation can be done with a queue where one Apify run is filtered at a time. Two Apify runs at a time might have duplicate jobs.  
-    */
+    const candidateSummary = readFileSync('./candidate_summary.txt', 'utf8');
+
     try {
         let unparsedJobs: UnparsedJobList[] = [];
         if (useDebugMode) {
-            // hardcode the Apify output file for debugging
-            // unparsedJobs = [
-            //     readJSONFromFile("apify_outputs/andrew-test.json"),
-            // ]
             
-            // Read all JSON files from apify_outputs directory
+            // Read all JSON files from apify_outputs directory. Useful if you already scraped the jobs and want to skip the scraping step. 
             const files = readdirSync('apify_outputs')
                 .filter(file => file.endsWith('.json'));
             
@@ -38,6 +63,10 @@ async function main() {
             
         } else {
             // Step 1: Scrape jobs from ALL input files and save them to files
+            /* The job scraping is done in parallel. This script will wait for all Apify actors/jobs to finish before the GPT evaluation to prevent GPT from processing duplicate jobs from different searches/Apify actors. 
+            
+            Alternatively, to lower latency, the GPT evaluation can be done with a queue where one Apify run is filtered at a time. Two Apify runs at a time might have duplicate jobs.  
+            */
             unparsedJobs = await scrapeJobs();
         }
         // Convert jobs to standard format
@@ -52,12 +81,10 @@ async function main() {
             return;
         }
 
-        const BATCH = true; // Batch = 50% OpenAI discount in exchange for 24h or less completion time
-        /* Batch dashboard to cancel batches: https://platform.openai.com/batches/ */
-
-
-        if (BATCH) { 
-             // Step 4: Process all jobs in batch
+        if (true) { 
+            // Step 4: Process all jobs in batch
+            /* Batch = 50% OpenAI discount in exchange for 24h or less completion time
+            Batch dashboard to cancel batches: https://platform.openai.com/batches/ */
             const jobResults: JobAiResponses[] = await batchProcessJobs(uniqueJobs, candidateSummary);
 
             // Create paired data to keep jobs and results together
@@ -85,6 +112,7 @@ async function main() {
             );
             
             // Step 5: Write to sheets in batches (the "recommended" limit is 2 MB of data per call)
+            // This will write to the first empty row in the sheet and overwrite anything after that row
             const BATCH_SIZE = 1000;
             for (let i = 0; i < pairedJobData.length; i += BATCH_SIZE) {
                 const batchPairs = pairedJobData.slice(i, i + BATCH_SIZE);
@@ -93,20 +121,11 @@ async function main() {
                 
                 await writeJobsToSheet(jobBatch, resultsBatch)
                 
-                // Add delay between batches
+                // Add delay between batches to prevent rate limiting
                 await new Promise(resolve => setTimeout(resolve, 1000));
             }
         }
-        else {
-            // Step 4: Write unique jobs to Google Sheets one by one
-            let writtenCount = 0;
-            for (const job of uniqueJobs) {
-                const jobAiResponses = await evaluateJobMatch(job, candidateSummary);
-                await writeJobToSheet(job, jobAiResponses);
-                writtenCount++;
-            }
-            log("INFO", `${writtenCount} unique jobs successfully written to Google Sheets.`);
-        }
+
 
     } catch (error) {
         log('ERROR', 'Workflow failed.', { error: (error as Error).stack });

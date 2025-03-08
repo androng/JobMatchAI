@@ -1,0 +1,15 @@
+John Doe
+
+[your resume]
+WORK EXPERIENCE:
+EDUCATION:
+SKILLS:
+HOBBIES:
+
+Job Preferences: (use chattGPT to make these as unambiguous as possible. Include specific percentages to weight the importance of each criteria. Negative criteria should be given specific penalties. )
+- Preference criteria 1
+- Salary requirement
+- 10% importance: Location preference (1st choice: Bay Area + 100 miles, Los Angeles area + 100 miles, San Diego area + 100 miles, New York area + 100 miles. Second choice is US west coast. )
+- No bilingual positions. Only English. 
+- Subtract 20 for a fully remote position.
+- Industry preference 

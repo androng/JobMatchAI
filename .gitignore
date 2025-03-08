@@ -1,10 +1,15 @@
+# Ignore directories
 /node_modules
 .env 
 .local.env
-apify_inputs/
-apify_outputs/
+apify_inputs/*
+apify_outputs/*
 google_service_account_credentials.json
 candidate_summary.txt
 dist/
 batch_files
 processed_jobs/
+
+# But include example files
+!apify_inputs/*.example.json
+!apify_outputs/*.example.json

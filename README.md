@@ -1,6 +1,6 @@
 # JobMatchAI
 
-JobMatchAI is a Node.js application that automates job matching and evaluation processes using AI services (Deepseek & ChatGPT), and Google Sheets integration.
+JobMatchAI is a Node.js application that automates job matching and evaluation processes using ChatGPT and Google Sheets. Tutorial: https://www.youtube.com/watch?v=eRQZALTfbp4
 
 ![Workflow Overview](./JobMatchAI-v1.png "Automated Job Search Workflow")
 
@@ -26,20 +26,11 @@ JobMatchAI is a Node.js application that automates job matching and evaluation p
    ```bash
    npm install
    ```
-1. Make a new Google Spreadsheet and add the following columns:
-   - Title
-   - Company
-   - Location
-   - Job URL
-   - Pay
-   - Contract Type
-   - Source
-   - Job Match Percentage
-   - Job Summary
-   - Date Generated
+1. Make a copy of this Google Spreadsheet and delete all the rows https://docs.google.com/spreadsheets/d/1x1e6GtfTl7LYh65MhVQtKApvwfsIdhXpFGPmXd57C8c/edit?gid=1330056534#gid=1330056534 
+ 
 
 3. Set up environment variables:
-   Create a `.env` file in the root directory and add the following:
+   Rename the `.env.example` file to `.env` and add your API keys:
 
    ```env
    APIFY_API_KEY=[apify api key]
@@ -50,10 +41,16 @@ JobMatchAI is a Node.js application that automates job matching and evaluation p
    USE_DEEPSEEK=[true or false]
    DEBUG_MODE=[true or false]
    ```
+   Note: The Deepseek part of the program is not finished. Start with OpenAI. 
 
-4. Modify the Apify LinkedIn Job Scraper API Input from https://console.apify.com/actors/BHzefUZlZRKWxkTck/input and update "apify_input.json"
+4. Modify the Apify Job Scraper API Inputs 
+  - For LinkedIn, go to https://console.apify.com/actors/hKByXkMQaC5Qt9UMN/input, fill in the form, then click "JSON" at the top of the page, and copy it into the local file "apify_inputs/hKByXkMQaC5Qt9UMN_production_assistant_US.json"
+  - For ZipRecruiter, go to https://console.apify.com/actors/vQO5g45mnm8jwognj/input, fill in the form, then click "JSON" at the top of the page, and copy it into the local file "apify_inputs/vQO5g45mnm8jwognj_video_producer_SF.json"
+  - For Indeed, go to https://console.apify.com/actors/qA8rz8tR61HdkfTBL/input, fill in the form, then click "JSON" at the top of the page, and copy it into the local file "apify_inputs/qA8rz8tR61HdkfTBL_videographer_SF.json"
 
-1. Add your resume and job preferencesto a "candidate_summary.txt" file in the root directory.
+  You can add add more json files in the apify_inputs directory. You can add multiple json files to run multiple Apify jobs in parallel. The file names have to start with the actor ID (e.g. hKByXkMQaC5Qt9UMN) 
+
+1. Rename "candidate_summary.example.txt" to "candidate_summary.txt" and add your resume and job preferences.
 
 ```
 Work Experience:
@@ -67,7 +64,7 @@ Job Preferences:
 - Languages: English
 ```
 
-1. Go to Google Cloud Console and create a service account and download the google_service_account_credentials.json file.
+1. Go to Google Cloud Console and create a service account and download the google_service_account_credentials.json file and put it in this directory.
 
 ## Usage
 
