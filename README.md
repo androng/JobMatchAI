@@ -1,8 +1,12 @@
 # JobMatchAI
 
-JobMatchAI is a Node.js application that automates job matching and evaluation processes using ChatGPT and Google Sheets. Tutorial: https://www.youtube.com/watch?v=eRQZALTfbp4
+JobMatchAI is a Typescript application that removes irrelevant and unqualified jobs using ChatGPT and Google Sheets. This lets you focus on relevant jobs. 
 
 ![Workflow Overview](./JobMatchAI-v1.png "Automated Job Search Workflow")
+
+Output: 
+
+![Output](./screenshot.png "Output")
 
 ## Prerequisites
 
@@ -17,21 +21,22 @@ JobMatchAI is a Node.js application that automates job matching and evaluation p
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/EricTechPro/JobMatchAI
-   cd jobmatchai
+   git clone git@github.com:USERNAME_HERE/JobMatchAI.git
+   cd JobMatchAI
    ```
 
-2. Install dependencies:
+1. Install dependencies:
 
    ```bash
    npm install
    ```
 1. Make a copy of this Google Spreadsheet and delete all the rows https://docs.google.com/spreadsheets/d/1x1e6GtfTl7LYh65MhVQtKApvwfsIdhXpFGPmXd57C8c/edit?gid=1330056534#gid=1330056534 
- 
+1. Edit the sharing settings of the Google Sheet to allow the service account to read and write to the sheet. Or just allow everyone with the link to read and write to the sheet. 
 
-3. Set up environment variables:
+1. Set up environment variables:
    Rename the `.env.example` file to `.env` and add your API keys:
 
+   Note: The Deepseek part of the program is not finished. Start with OpenAI. 
    ```env
    APIFY_API_KEY=[apify api key]
    SPREADSHEET_ID=[google sheet spreadsheet id]
@@ -41,28 +46,26 @@ JobMatchAI is a Node.js application that automates job matching and evaluation p
    USE_DEEPSEEK=[true or false]
    DEBUG_MODE=[true or false]
    ```
-   Note: The Deepseek part of the program is not finished. Start with OpenAI. 
-
-4. Modify the Apify Job Scraper API Inputs 
-  - For LinkedIn, go to https://console.apify.com/actors/hKByXkMQaC5Qt9UMN/input, fill in the form, then click "JSON" at the top of the page, and copy it into the local file "apify_inputs/hKByXkMQaC5Qt9UMN_production_assistant_US.json"
-  - For ZipRecruiter, go to https://console.apify.com/actors/vQO5g45mnm8jwognj/input, fill in the form, then click "JSON" at the top of the page, and copy it into the local file "apify_inputs/vQO5g45mnm8jwognj_video_producer_SF.json"
-  - For Indeed, go to https://console.apify.com/actors/qA8rz8tR61HdkfTBL/input, fill in the form, then click "JSON" at the top of the page, and copy it into the local file "apify_inputs/qA8rz8tR61HdkfTBL_videographer_SF.json"
-
-  You can add add more json files in the apify_inputs directory. You can add multiple json files to run multiple Apify jobs in parallel. The file names have to start with the actor ID (e.g. hKByXkMQaC5Qt9UMN) 
-
+   
+1. Sign up for Apify and start the Basic subscription. 
+1. Modify the Apify Job Scraper API Inputs 
+   - For LinkedIn, go to https://console.apify.com/actors/hKByXkMQaC5Qt9UMN/input, fill in the form, then click "JSON" at the top of the page, and copy it into the local file "apify_inputs/hKByXkMQaC5Qt9UMN_production_assistant_US.json"
+   - For ZipRecruiter, go to https://console.apify.com/actors/vQO5g45mnm8jwognj/input, fill in the form, then click "JSON" at the top of the page, and copy it into the local file "apify_inputs/vQO5g45mnm8jwognj_video_producer_SF.json"
+   - For Indeed, go to https://console.apify.com/actors/qA8rz8tR61HdkfTBL/input, fill in the form, then click "JSON" at the top of the page, and copy it into the local file "apify_inputs/qA8rz8tR61HdkfTBL_videographer_SF.json"
+   - You can add add more json files in the apify_inputs directory. You can add multiple json files to run multiple Apify jobs in parallel. The file names have to start with the actor ID (e.g. hKByXkMQaC5Qt9UMN) 
 1. Rename "candidate_summary.example.txt" to "candidate_summary.txt" and add your resume and job preferences.
 
-```
-Work Experience:
-Education:
-Hobbies: 
+   ```
+   Work Experience:
+   Education:
+   Hobbies: 
 
-Job Preferences:
-- Preferred Locations: Bay Area + 100 miles, Los Angeles area + 100 miles, San Diego area + 100 miles, New York area + 100 miles. Second choice is US west coast. 
-- Not a student so ignore internships unless it says something like "school enrollment not required"
-- Not a manager so ignore supervisor/director positions
-- Languages: English
-```
+   Job Preferences:
+   - Preferred Locations: Bay Area + 100 miles, Los Angeles area + 100 miles, San Diego area + 100 miles, New York area + 100 miles. Second choice is US west coast. 
+   - Not a student so ignore internships unless it says something like "school enrollment not required"
+   - Not a manager so ignore supervisor/director positions
+   - Languages: English
+   ```
 
 1. Go to Google Cloud Console and create a service account and download the google_service_account_credentials.json file and put it in this directory.
 
@@ -91,3 +94,4 @@ node dist/index.js
 ## Contributing
 
 Contributions are welcome! Please fork this repository and submit a pull request for review.
+

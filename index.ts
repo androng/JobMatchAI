@@ -38,6 +38,11 @@ function validateEnvironment() {
         log('INFO', 'Please add these to your .env file');
         process.exit(1);
     }
+    /* check spreadsheet ID is exactly 44 characters long */
+    if (process.env.SPREADSHEET_ID?.length !== 44) {
+        log('ERROR', 'SPREADSHEET_ID is not exactly 44 characters long');
+        process.exit(1);
+    }
 }
 
 async function main() {
