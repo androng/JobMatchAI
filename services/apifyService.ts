@@ -52,7 +52,7 @@ function parseJobs(jobLists: UnparsedJobList[]): Job[] {
                     title: job.Title,
                     companyName: job.OrgName,
                     location: job.City,
-                    jobUrl: job.Href,
+                    jobUrl: job.ApplyURL || job.Href,
                     pay: job.FormattedSalaryShort,
                     contractType: job.EmploymentType,
                     description: job.description,
@@ -115,7 +115,7 @@ async function scrapeJobs(): Promise<UnparsedJobList[]> {
     const failedInputs: FailedInput[] = [];
 
     // Apify starter plan is 32 GB memory and 10 concurrent jobs. Jobs take up 4 GB each.
-    const queue = new PQueue({ concurrency: 7 }); 
+    const queue = new PQueue({ concurrency: 8 }); 
 
     const processJob = async ({ apifyActor, filePath }: ApifyActorJob): Promise<UnparsedJobList | null> => {
         try {

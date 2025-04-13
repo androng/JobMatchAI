@@ -19,7 +19,7 @@ function getCompositeKey(title: string, company: string, location: string): stri
 }
 
 function filterDuplicateJobs(existingJobs: any[], newJobs: Job[]) {
-    log('INFO', 'Removing duplicate jobs...');
+    log('INFO', 'Removing duplicate jobs. newJobs size: ' + newJobs.length);
 
     // Create a composite key by concatenating columns 0, 1, and 2  
     // This is to avoid duplicate jobs across different websites like ZipRecruiter and LinkedIn where 
